@@ -1,4 +1,5 @@
 const STORE_KEY = "payroll-dashboard-v1";
+const AUTH_PREF_KEY = "payroll-auth-prefs-v1";
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 const CURRENCY = {
   AUD: { symbol: "$", locale: "en-AU" },
@@ -10,11 +11,11 @@ const CURRENCY = {
 
 const initialState = {
   settings: {
-    defaultRate: 28,
+    defaultRate: 20,
     currency: "AUD",
     weekStart: 1,
     autoBreak: true,
-    defaultBreak: 0.5,
+    defaultBreak: 0,
     decimals: 2,
     darkMode: false,
   },
@@ -38,6 +39,7 @@ const els = {
   authTabs: document.querySelectorAll(".auth-tab"),
   authEmail: document.querySelector("#auth-email"),
   authPassword: document.querySelector("#auth-password"),
+  rememberLogin: document.querySelector("#remember-login"),
   authSubmit: document.querySelector("#auth-submit"),
   authMessage: document.querySelector("#auth-message"),
   views: document.querySelectorAll(".view"),
@@ -67,6 +69,7 @@ const els = {
   decimals: document.querySelector("#decimals"),
   autoBreak: document.querySelector("#auto-break"),
   darkMode: document.querySelector("#dark-mode"),
+  settingsSaveState: document.querySelector("#settings-save-state"),
   cloudStatus: document.querySelector("#cloud-status"),
   cloudLogout: document.querySelector("#cloud-logout"),
 };
@@ -81,11 +84,19 @@ function loadState() {
 }
 
 function mergeState(base, saved) {
-  return {
+  const merged = {
     settings: { ...base.settings, ...(saved.settings || {}) },
     records: saved.records || {},
     meta: saved.meta || {},
   };
+
+  if (!merged.meta.defaultSettingsV2) {
+    if (merged.settings.defaultRate === 28) merged.settings.defaultRate = 20;
+    if (merged.settings.defaultBreak === 0.5) merged.settings.defaultBreak = 0;
+    merged.meta.defaultSettingsV2 = true;
+  }
+
+  return merged;
 }
 
 function persist() {
@@ -105,6 +116,28 @@ function setCloudStatus(message) {
 
 function setAuthMessage(message) {
   if (els.authMessage) els.authMessage.textContent = message;
+}
+
+function loadAuthPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_PREF_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function applyAuthPrefs() {
+  const prefs = loadAuthPrefs();
+  els.rememberLogin.checked = Boolean(prefs.remember);
+  els.authEmail.value = prefs.remember ? prefs.email || "" : "";
+}
+
+function saveAuthPrefs(email) {
+  if (els.rememberLogin.checked) {
+    localStorage.setItem(AUTH_PREF_KEY, JSON.stringify({ remember: true, email }));
+  } else {
+    localStorage.removeItem(AUTH_PREF_KEY);
+  }
 }
 
 function showAuth() {
@@ -254,6 +287,8 @@ async function submitAuth(event) {
     return;
   }
 
+  saveAuthPrefs(email);
+
   if (authMode === "signup" && !result.data.session) {
     setAuthMessage("账号已创建，但 Supabase 后台仍开启了邮箱验证。请在 Authentication > Providers > Email 里关闭 Confirm email。");
     return;
@@ -397,6 +432,7 @@ function renderSettings() {
   els.decimals.value = state.settings.decimals;
   els.autoBreak.checked = state.settings.autoBreak;
   els.darkMode.checked = state.settings.darkMode;
+  els.settingsSaveState.textContent = "修改设置后点击保存。";
 }
 
 function renderWeek() {
@@ -582,10 +618,18 @@ els.historyList.addEventListener("click", (event) => {
   renderWeek();
 });
 
-function updateSettings(event) {
+function markSettingsDirty(event) {
   if (event?.target?.closest(".cloud-box")) return;
+  els.settingsSaveState.textContent = "有未保存的设置。";
+}
+
+function updateSettings(event) {
+  event.preventDefault();
 
   const previousWeekStart = state.settings.weekStart;
+  const previousDefaultRate = Number(state.settings.defaultRate);
+  const previousDefaultBreak = Number(state.settings.defaultBreak);
+  const previousAutoBreak = Boolean(state.settings.autoBreak);
   state.settings.defaultRate = Number(els.defaultRate.value);
   state.settings.currency = els.currency.value;
   state.settings.weekStart = Number(els.weekStart.value);
@@ -598,12 +642,31 @@ function updateSettings(event) {
     selectedWeekStart = startOfWeek(selectedWeekStart, state.settings.weekStart);
   }
 
+  updateCurrentWeekDefaults(previousDefaultRate, previousDefaultBreak, previousAutoBreak);
+
   persist();
   render();
+  els.settingsSaveState.textContent = "设置已保存。";
 }
 
-els.settingsForm.addEventListener("input", updateSettings);
-els.settingsForm.addEventListener("change", updateSettings);
+function updateCurrentWeekDefaults(previousRate, previousBreak, previousAutoBreak) {
+  weekDates().forEach((date) => {
+    const record = getRecord(dateKey(date));
+    const rateWasDefault = Number(record.rate) === previousRate;
+    const breakWasDefault = previousAutoBreak
+      ? Number(record.breakHours) === previousBreak
+      : Number(record.breakHours) === 0;
+
+    if (rateWasDefault) record.rate = Number(state.settings.defaultRate);
+    if (breakWasDefault) {
+      record.breakHours = state.settings.autoBreak ? Number(state.settings.defaultBreak) : 0;
+    }
+  });
+}
+
+els.settingsForm.addEventListener("input", markSettingsDirty);
+els.settingsForm.addEventListener("change", markSettingsDirty);
+els.settingsForm.addEventListener("submit", updateSettings);
 els.cloudLogout.addEventListener("click", logoutFromCloud);
 els.authForm.addEventListener("submit", submitAuth);
 els.authTabs.forEach((tab) => {
@@ -612,4 +675,5 @@ els.authTabs.forEach((tab) => {
 
 showAuth();
 updateAuthMode("login");
+applyAuthPrefs();
 initCloud();

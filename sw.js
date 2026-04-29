@@ -1,4 +1,4 @@
-const CACHE_NAME = "payroll-dashboard-cache-v4";
+const CACHE_NAME = "payroll-dashboard-cache-v6";
 const ASSETS = [
   "./",
   "./index.html",

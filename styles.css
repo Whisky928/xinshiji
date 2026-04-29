@@ -266,7 +266,8 @@ main,
 .day-result,
 .history-item,
 .month-item,
-.switch-row {
+.switch-row,
+.remember-row {
   display: flex;
   align-items: center;
 }
@@ -691,6 +692,19 @@ select:focus {
   gap: 10px;
 }
 
+.settings-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.settings-actions p {
+  color: var(--muted);
+}
+
 .ghost-btn {
   border: 1px solid var(--line);
   box-shadow: none;
@@ -701,9 +715,20 @@ select:focus {
   justify-content: space-between;
 }
 
-.switch-row input {
+.switch-row input,
+.remember-row input {
   width: 22px;
   min-height: 22px;
+}
+
+.remember-row {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.remember-row span {
+  font-size: 13px;
 }
 
 @media (max-width: 920px) {
@@ -824,5 +849,10 @@ select:focus {
   .day-fields,
   .settings-form {
     grid-template-columns: 1fr;
+  }
+
+  .settings-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
