@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0e7c66" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="薪时记" />
+    <title>薪时记</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="auth-screen" id="auth-screen">
+      <div class="auth-bg" aria-hidden="true"></div>
+      <div class="auth-card">
+        <div class="auth-brand">
+          <p class="eyebrow">Personal Payroll</p>
+          <h1>薪时记</h1>
+          <p class="auth-copy">把每天的时间、时薪和收入同步到云端。下班后 10 秒记录，周末一眼看清工资。</p>
+          <div class="auth-metrics" aria-label="产品重点">
+            <span>周视角</span>
+            <span>云同步</span>
+            <span>收入趋势</span>
+          </div>
+        </div>
+        <div class="auth-panel">
+          <div class="auth-panel-head">
+            <p class="eyebrow">Secure Workspace</p>
+            <h2>进入你的工资账本</h2>
+          </div>
+          <div class="auth-tabs">
+            <button class="auth-tab is-active" type="button" data-auth-mode="login">登录</button>
+            <button class="auth-tab" type="button" data-auth-mode="signup">注册</button>
+          </div>
+          <form id="auth-form">
+            <label>
+              <span>邮箱</span>
+              <input type="email" id="auth-email" placeholder="name@example.com" autocomplete="email" required />
+            </label>
+            <label>
+              <span>密码</span>
+              <input type="password" id="auth-password" placeholder="至少 6 位" autocomplete="current-password" required minlength="6" />
+            </label>
+            <button class="auth-submit" type="submit" id="auth-submit">登录</button>
+          </form>
+          <p class="auth-message" id="auth-message">正在连接云端服务...</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell is-hidden" id="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Personal Payroll</p>
+          <h1>薪时记</h1>
+        </div>
+        <nav class="tabs" aria-label="页面">
+          <button class="tab is-active" data-view="dashboard">本周</button>
+          <button class="tab" data-view="history">历史</button>
+          <button class="tab" data-view="settings">设置</button>
+        </nav>
+      </header>
+
+      <main>
+        <section class="view is-active" id="dashboard-view">
+          <div class="weekbar">
+            <button class="icon-btn" id="prev-week" aria-label="上一周" title="上一周">‹</button>
+            <div>
+              <p class="muted">当前周</p>
+              <h2 id="week-range">-</h2>
+            </div>
+            <button class="icon-btn" id="next-week" aria-label="下一周" title="下一周">›</button>
+            <button class="today-btn" id="current-week">回到本周</button>
+          </div>
+
+          <section class="summary-grid" aria-label="本周统计">
+            <article class="summary-card hero-card">
+              <span>本周总工资</span>
+              <strong id="summary-pay">$0.00</strong>
+              <small id="summary-best-day">最高收入 -</small>
+            </article>
+            <article class="summary-card">
+              <span>本周总工时</span>
+              <strong id="summary-hours">0 h</strong>
+              <small id="summary-longest-day">最长工作 -</small>
+            </article>
+            <article class="summary-card">
+              <span>上班天数</span>
+              <strong id="summary-days">0 天</strong>
+              <small>已记录的上班日</small>
+            </article>
+            <article class="summary-card">
+              <span>平均时薪</span>
+              <strong id="summary-rate">$0.00 / h</strong>
+              <small>按本周收入计算</small>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <div class="panel days-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">Daily Log</p>
+                  <h3>每日记录</h3>
+                </div>
+                <p class="save-state" id="save-state">已保存</p>
+              </div>
+              <div class="days-grid" id="days-grid"></div>
+            </div>
+
+            <aside class="panel chart-panel">
+              <div class="section-head">
+                <div>
+                  <p class="eyebrow">Trend</p>
+                  <h3>本周收入趋势</h3>
+                </div>
+              </div>
+              <div class="chart" id="trend-chart" aria-label="本周收入趋势图"></div>
+            </aside>
+          </section>
+        </section>
+
+        <section class="view" id="history-view">
+          <div class="section-head page-head">
+            <div>
+              <p class="eyebrow">History</p>
+              <h2>历史统计</h2>
+            </div>
+            <div class="history-total" id="month-summary">本月 $0.00 · 0 h</div>
+          </div>
+          <div class="history-layout">
+            <section class="panel">
+              <h3>每周收入</h3>
+              <div class="history-list" id="history-list"></div>
+            </section>
+            <section class="panel">
+              <h3>月度汇总</h3>
+              <div class="month-grid" id="month-grid"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="settings-view">
+          <div class="section-head page-head">
+            <div>
+              <p class="eyebrow">Preferences</p>
+              <h2>设置</h2>
+            </div>
+          </div>
+          <form class="settings-form panel" id="settings-form">
+            <label>
+              <span>默认时薪</span>
+              <input type="number" min="0" step="0.01" id="default-rate" />
+            </label>
+            <label>
+              <span>默认货币</span>
+              <select id="currency">
+                <option value="AUD">AUD $</option>
+                <option value="USD">USD $</option>
+                <option value="CNY">CNY ¥</option>
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+              </select>
+            </label>
+            <label>
+              <span>每周开始日</span>
+              <select id="week-start">
+                <option value="1">周一</option>
+                <option value="0">周日</option>
+              </select>
+            </label>
+            <label>
+              <span>默认休息时间</span>
+              <input type="number" min="0" step="0.25" id="default-break" />
+            </label>
+            <label>
+              <span>小数位</span>
+              <select id="decimals">
+                <option value="2">2</option>
+                <option value="0">0</option>
+              </select>
+            </label>
+            <label class="switch-row">
+              <span>自动扣除休息时间</span>
+              <input type="checkbox" id="auto-break" />
+            </label>
+            <label class="switch-row">
+              <span>深色模式</span>
+              <input type="checkbox" id="dark-mode" />
+            </label>
+            <section class="cloud-box">
+              <div>
+                <p class="eyebrow">Cloud Sync</p>
+                <h3>云端同步</h3>
+                <p id="cloud-status">未配置云端服务，当前使用本地存储。</p>
+              </div>
+              <div class="cloud-actions">
+                <button type="button" class="today-btn ghost-btn" id="cloud-logout">退出登录</button>
+              </div>
+            </section>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <template id="day-card-template">
+      <article class="day-card">
+        <div class="day-top">
+          <div>
+            <strong class="day-name"></strong>
+            <span class="day-date"></span>
+          </div>
+          <label class="work-toggle">
+            <input type="checkbox" class="is-workday" />
+            <span></span>
+          </label>
+        </div>
+        <div class="day-fields">
+          <label>
+            <span>开始</span>
+            <input type="time" class="start-time" />
+          </label>
+          <label>
+            <span>结束</span>
+            <input type="time" class="end-time" />
+          </label>
+          <label>
+            <span>休息 h</span>
+            <input type="number" min="0" step="0.25" class="break-hours" />
+          </label>
+          <label>
+            <span>时薪</span>
+            <input type="number" min="0" step="0.01" class="hourly-rate" />
+          </label>
+          <label class="note-field">
+            <span>备注</span>
+            <input type="text" class="note" maxlength="48" />
+          </label>
+        </div>
+        <p class="error-text"></p>
+        <div class="day-result">
+          <span class="hours-result">0 h</span>
+          <strong class="pay-result">$0.00</strong>
+        </div>
+      </article>
+    </template>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
